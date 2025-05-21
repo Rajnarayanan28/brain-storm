@@ -16,6 +16,37 @@ body, html {
   left: 0;
 }
 
+/* 🎯 NEW BUTTON WRAPPER FOR FIXED TOP-LEFT CORNER LAYOUT */
+#topControls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+}
+
+#topControls button {
+  padding: 10px 20px;
+  background: #4a6bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+#topControls button:hover {
+  background: #3a5bef;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* ✂️ REMOVE INDIVIDUAL POSITIONING RULES FOR BUTTONS (delete old #addNoteBtn and #openFolderBtn styles) */
+
 .note {
   will-change: transform;
   position: absolute;
@@ -91,28 +122,6 @@ body, html {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-#addNoteBtn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  padding: 10px 20px;
-  background: #4a6bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  transition: all 0.2s ease;
-  z-index: 100;
-  font-weight: 500;
-}
-
-#addNoteBtn:hover {
-  background: #3a5bef;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
 .color-picker {
   position: absolute;
   left: 10px;
@@ -157,22 +166,21 @@ body, html {
 }
 
 .note.green {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-  }
-  
-  .note.pink {
-    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-  }
-  
-  .note.orange {
-    background: linear-gradient(135deg, #ffe8cc 0%, #ffdab9 100%);
-  }
-  
-  .note.purple {
-    background: linear-gradient(135deg, #e2d4f0 0%, #d6b3f0 100%);
-  }
-  
-  .note.brown {
-    background: linear-gradient(135deg, #efd9c1 0%, #d2b48c 100%);
-  }
-  
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.note.pink {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.note.orange {
+  background: linear-gradient(135deg, #ffe8cc 0%, #ffdab9 100%);
+}
+
+.note.purple {
+  background: linear-gradient(135deg, #e2d4f0 0%, #d6b3f0 100%);
+}
+
+.note.brown {
+  background: linear-gradient(135deg, #efd9c1 0%, #d2b48c 100%);
+}
