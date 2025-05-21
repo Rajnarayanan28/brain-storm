@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sticky Notes Canvas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <button id="addNoteBtn">Add Note</button>
+  <div id="canvas"></div>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    let dragNote = null, offsetX = 0, offsetY = 0;
+    let fileCounter = 1;
+    let directoryHandle = null; // Add this line
+
+    function formatDate(date) {
+      return date.toLocaleString();
+    }
+
+    function createNote(x, y, text = "New note") {
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.style.left = x + 'px';
+      note.style.top = y + 'px';
+
+      // Add color picker
+      const colorPicker = document.createElement('div');
+      colorPicker.className = 'color-picker';
+      colorPicker.style.background = '#fff8a6'; // Match default note color
+      
+      const colorOptions = document.createElement('div');
+      colorOptions.className = 'color-options';
+      
+      const colors = [
+        {name: 'default', value: '#fff8a6'},
+        {name: 'green', value: '#d4edda'},
+        {name: 'pink', value: '#f8d7da'},
+        {name: 'orange', value: '#ffe8cc'},
+        {name: 'purple', value: '#e2d4f0'},
+        {name: 'brown', value: '#efd9c1'}
+      ];
+
+      colors.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.className = 'color-option';
+        colorOption.style.background = color.value;
+        colorOption.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Remove all color classes first
+          note.className = 'note';
+          if (color.name !== 'default') {
+            note.classList.add(color.name);
+          }
+          // Update the color picker cube to match selected color
+          colorPicker.style.background = color.value;
+          colorPicker.classList.remove('expanded');
+        });
+        colorOptions.appendChild(colorOption);
+      });
+
+      colorPicker.appendChild(colorOptions);
+      
+      colorPicker.addEventListener('click', (e) => {
+        e.stopPropagation();
+        colorPicker.classList.toggle('expanded');
+      });
+
+      let logs = [];
+      let isEditing = false;
+      let isSaved = false;
+      let currentLogIndex = null;
+
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('spellcheck', 'false');
+      textarea.setAttribute('readonly', 'readonly');
+      textarea.style.background = '#f9f9f9';
+
+      function autoResizeTextarea() {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+      }
+      autoResizeTextarea();
+      textarea.addEventListener('input', autoResizeTextarea);
+
+      const btnContainer = document.createElement('div');
+      btnContainer.className = 'btn-container';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = function () {
+        if (!isEditing) {
+          textarea.removeAttribute('readonly');
+          textarea.style.background = 'transparent';
+          textarea.focus();
+          isEditing = true;
+          showButtons();
+        } else {
+          if (currentLogIndex !== null && logs.length > 0) {
+            logs[currentLogIndex].text = textarea.value;
+            logs[currentLogIndex].updated = new Date();
+            isEditing = false;
+            textarea.setAttribute('readonly', 'readonly');
+            textarea.style.background = '#f9f9f9';
+            showButtons();
+          }
+        }
+      };
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.display = 'none';
+      saveBtn.onclick = function () {
+        textarea.setAttribute('readonly', 'readonly');
+        textarea.style.background = '#f9f9f9';
+        isEditing = false;
+        isSaved = true;
+        const now = new Date();
+        logs.push({
+          text: textarea.value,
+          saved: now,
+          updated: now
+        });
+        currentLogIndex = logs.length - 1;
+        showButtons();
+        
+        // Add file saving functionality
+        const blob = new Blob([textarea.value], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file-${fileCounter++}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
+
+      textarea.addEventListener('input', function () {
+        if (isEditing) {
+          saveBtn.style.display = '';
+        }
+      });
+
+      const logDropdown = document.createElement('select');
+      logDropdown.className = 'log-dropdown';
+
+      const logBtn = document.createElement('button');
+      logBtn.textContent = 'Log';
+      logBtn.onclick = function (e) {
+        e.stopPropagation();
+        if (logs.length === 0) {
+          alert('No logs yet.');
+          return;
+        }
+        logDropdown.innerHTML = '';
+        logs.forEach((log, idx) => {
+          const option = document.createElement('option');
+          option.value = idx;
+          option.textContent = `#${idx + 1} - ${formatDate(log.saved)}`;
+          logDropdown.appendChild(option);
+        });
+        logDropdown.style.display = logDropdown.style.display === 'none' ? 'block' : 'none';
+        if (logDropdown.style.display === 'block') {
+          logDropdown.focus();
+        }
+      };
+
+      logDropdown.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
+      });
+
+      logDropdown.onchange = function () {
+        const idx = parseInt(logDropdown.value, 10);
+        if (!isNaN(idx) && logs[idx]) {
+          textarea.value = logs[idx].text;
+          autoResizeTextarea();
+          currentLogIndex = idx;
+        }
+        logDropdown.style.display = 'none';
+      };
+
+      btnContainer.appendChild(editBtn);
+      btnContainer.appendChild(saveBtn);
+      btnContainer.appendChild(logBtn);
+      btnContainer.appendChild(logDropdown);
+
+      note.appendChild(colorPicker);
+      note.appendChild(btnContainer);
+      note.appendChild(textarea);
+      canvas.appendChild(note);
+
+      function showButtons() {
+        if (!isSaved) {
+          editBtn.style.display = '';
+          saveBtn.style.display = isEditing ? '' : 'none';
+          logBtn.style.display = '';
+        } else if (isEditing) {
+          editBtn.style.display = '';
+          saveBtn.style.display = '';
+          logBtn.style.display = '';
+        } else {
+          editBtn.style.display = '';
+          saveBtn.style.display = 'none';
+          logBtn.style.display = '';
+        }
+      }
+
+      note.addEventListener('mousedown', function (ev) {
+        if (['TEXTAREA', 'BUTTON', 'SELECT'].includes(ev.target.tagName)) return;
+        dragNote = note;
+        offsetX = ev.offsetX;
+        offsetY = ev.offsetY;
+        note.style.zIndex = 10;
+      });
+
+      note.addEventListener('click', function () {
+        note.style.zIndex = 10;
+        Array.from(canvas.children).forEach(child => {
+          if (child !== note) child.style.zIndex = 1;
+        });
+      });
+
+      showButtons();
+    }
+
+    addNoteBtn.addEventListener('click', function () {
+      createNote(60 + Math.random() * 300, 60 + Math.random() * 200);
+    });
+
+    canvas.addEventListener('dblclick', function (e) {
+      if (e.target !== canvas) return;
+      createNote(e.clientX - canvas.getBoundingClientRect().left,
+                 e.clientY - canvas.getBoundingClientRect().top);
+    });
+
+    // Add this at the top with other variables
+    let lastUpdateTime = 0;
+    const dragUpdateInterval = 16; // ~60fps
+
+    document.addEventListener('mousemove', function (e) {
+      if (!dragNote) return;
+      
+      const now = performance.now();
+      if (now - lastUpdateTime < dragUpdateInterval) return;
+      lastUpdateTime = now;
+      
+      dragNote.style.transform = `translate(${e.clientX - offsetX - dragNote.getBoundingClientRect().left}px, 
+                                       ${e.clientY - offsetY - dragNote.getBoundingClientRect().top}px)`;
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (dragNote) {
+        const rect = dragNote.getBoundingClientRect();
+        dragNote.style.left = rect.left + 'px';
+        dragNote.style.top = rect.top + 'px';
+        dragNote.style.transform = 'none';
+        dragNote.style.zIndex = 1;
+        dragNote = null;
+      }
+    });
+  </script>
+</body>
+</html>
