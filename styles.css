@@ -1,169 +1,162 @@
 body, html {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  #canvas {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  
-  #controls {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    gap: 10px;
-    z-index: 100;
-  }
-  
-  #selectFolderBtn,
-  #addNoteBtn {
-    padding: 10px 20px;
-    background: #4a6bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    font-weight: 500;
-  }
-  
-  #selectFolderBtn:hover,
-  #addNoteBtn:hover {
-    background: #3a5bef;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  }
-  
-  .note {
-    will-change: transform;
-    position: absolute;
-    min-width: 250px;
-    min-height: 200px;
-    background: linear-gradient(135deg, #fff8a6 0%, #fff1a6 100%);
-    border: none;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    cursor: move;
-    user-select: none;
-    resize: both;
-    overflow: visible;
-    transition: all 0.2s ease;
-  }
-  
-  .note:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    transform: translateY(-2px);
-  }
-  
-  .note textarea {
-    width: 100%;
-    min-height: 100%;
-    border: none;
-    background: transparent;
-    resize: none;
-    font-size: 1em;
-    outline: none;
-    box-sizing: border-box;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.5;
-    padding: 8px;
-    margin-top: 8px;
-  }
-  
-  .btn-container {
-    position: relative;
-    display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-  
-  .note button {
-    font-size: 0.9em;
-    cursor: pointer;
-    background: rgba(255,255,255,0.7);
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 4px;
-    padding: 4px 8px;
-    transition: all 0.2s ease;
-  }
-  
-  .note button:hover {
-    background: rgba(255,255,255,0.9);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  
-  .log-dropdown {
-    position: absolute;
-    z-index: 100;
-    left: 60px;
-    top: 28px;
-    min-width: 180px;
-    margin: 0;
-    padding: 4px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: white;
-    display: none;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .color-picker {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    width: 20px;
-    height: 20px;
-    background: #fff8a6;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    overflow: hidden;
-  }
-  
-  .color-picker.expanded {
-    width: 132px;
-    padding: 4px;
-    transform: translateX(0);
-  }
-  
-  .color-options {
-    display: none;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  
-  .color-picker.expanded .color-options {
-    display: flex;
-  }
-  
-  .color-option {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-  }
-  
-  .color-option:hover {
-    transform: scale(1.2);
-  }
-  
-  .note.green {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.note {
+  will-change: transform;
+  position: absolute;
+  min-width: 250px;
+  min-height: 200px;
+  background: linear-gradient(135deg, #fff8a6 0%, #fff1a6 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: move;
+  user-select: none;
+  resize: both;
+  overflow: visible;
+  transition: all 0.2s ease;
+}
+
+.note:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.note textarea {
+  width: 100%;
+  min-height: 100%;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-size: 1em;
+  outline: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.btn-container {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.note button {
+  font-size: 0.9em;
+  cursor: pointer;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+}
+
+.note button:hover {
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.log-dropdown {
+  position: absolute;
+  z-index: 100;
+  left: 60px;
+  top: 28px;
+  min-width: 180px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: white;
+  display: none;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#addNoteBtn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 10px 20px;
+  background: #4a6bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  z-index: 100;
+  font-weight: 500;
+}
+
+#addNoteBtn:hover {
+  background: #3a5bef;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.color-picker {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 20px;
+  height: 20px;
+  background: #fff8a6;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.color-picker.expanded {
+  width: 132px;
+  padding: 4px;
+  transform: translateX(0);
+}
+
+.color-options {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.color-picker.expanded .color-options {
+  display: flex;
+}
+
+.color-option {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.2);
+}
+
+.note.green {
     background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
   }
   
