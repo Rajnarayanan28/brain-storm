@@ -74,16 +74,17 @@ body, html {
   min-height: 100%;
   border: none;
   background: transparent;
-  resize: none;
+  resize: both;
   font-size: 1em;
   outline: none;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
   padding: 8px;
   margin-top: 8px;
 }
+
 
 .btn-container {
   position: relative;
