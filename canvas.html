@@ -36,8 +36,21 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
+      width: 80%;
       height: 100%;
+    }
+
+    #sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 20%;
+      height: 100%;
+      background: #f5f5f5;
+      border-left: 1px solid #ddd;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -48,6 +61,7 @@
     <button id="toggleGraphBtn">Open Graph</button>
   </div>
   <div id="canvas"></div>
+  <div id="sidebar"></div>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="app.js"></script>
 </body>

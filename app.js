@@ -2,6 +2,7 @@ const canvas = document.getElementById('canvas');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const selectFolderBtn = document.getElementById('selectFolderBtn');
 const toggleGraphBtn = document.getElementById('toggleGraphBtn');
+const sidebar = document.getElementById('sidebar');
 
 let graphWindow = null;
 toggleGraphBtn.addEventListener('click', () => {
@@ -289,6 +290,8 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
   btnContainer.append(editBtn, saveBtn, logBtn, logDropdown);
   note.append(colorPicker, btnContainer, filenameDisplay, textarea);
   canvas.appendChild(note);
+  // Add this line to create a sidebar entry for each note:
+  createSidebarEntry(note, filenameDisplay.textContent, existingFileHandle);
 
   function showButtons() {
     saveBtn.style.display = isEditing ? '' : 'none';
@@ -353,3 +356,61 @@ selectFolderBtn.addEventListener('click', async () => {
     alert('Failed to open folder. Notes will be downloaded instead.');
   }
 });
+
+function createSidebarEntry(note, filename, fileHandle) {
+  const entry = document.createElement('div');
+  entry.className = 'sidebar-entry';
+  entry.textContent = filename;
+  entry.style.cursor = 'pointer';
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✖';
+  closeBtn.title = 'Close note';
+  closeBtn.style.marginLeft = '8px';
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    note.remove();
+    entry.remove();
+  };
+
+  // Delete button
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = '🗑️';
+  deleteBtn.title = 'Delete file';
+  deleteBtn.style.marginLeft = '4px';
+  deleteBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this file?')) {
+      if (fileHandle) {
+        try {
+          await directoryHandle.removeEntry(fileHandle.name);
+          note.remove();
+          entry.remove();
+        } catch (err) {
+          alert('Failed to delete file.');
+        }
+      } else {
+        note.remove();
+        entry.remove();
+      }
+    }
+  };
+
+  entry.appendChild(closeBtn);
+  entry.appendChild(deleteBtn);
+  entry.onclick = () => {
+    note.style.zIndex = 10;
+    Array.from(canvas.children).forEach(child => {
+      if (child !== note) child.style.zIndex = 1;
+    });
+    note.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+  sidebar.appendChild(entry);
+  note.addEventListener('click', () => {
+    entry.classList.add('active');
+    Array.from(sidebar.children).forEach(child => {
+      if (child !== entry) child.classList.remove('active');
+    });
+  });
+}
