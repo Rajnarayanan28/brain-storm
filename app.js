@@ -12,21 +12,17 @@ function formatDate(date) {
 async function promptFileName(existingNames) {
   while (true) {
     let fileName = prompt('Enter a file name for your note (without extension):');
-    if (fileName === null) return null; // User cancelled
-
+    if (fileName === null) return null;
     fileName = fileName.trim();
     if (!fileName) {
       alert('File name cannot be empty.');
       continue;
     }
-
     if (!fileName.endsWith('.txt')) fileName += '.txt';
-
     if (existingNames.includes(fileName)) {
-      alert(`File name "${fileName}" already exists. Please enter a different name.`);
+      alert(`File "${fileName}" already exists.`);
       continue;
     }
-
     return fileName;
   }
 }
@@ -40,14 +36,54 @@ async function getExistingFileNames() {
   return names;
 }
 
+function getBaseName(filename) {
+  return filename.replace(/\.txt$/, '');
+}
+
+function updateSendReceiveCounts() {
+  const allNotes = Array.from(document.querySelectorAll('.note'));
+  const noteMap = {};
+  allNotes.forEach(note => {
+    const filenameDiv = note.querySelector('.filename');
+    if (filenameDiv) {
+      noteMap[getBaseName(filenameDiv.textContent)] = note;
+    }
+  });
+
+  allNotes.forEach(note => {
+    const sendNumber = note.querySelector('.send-number');
+    const receiveNumber = note.querySelector('.receive-number');
+    if (sendNumber) sendNumber.textContent = ' s - 0';
+    if (receiveNumber) receiveNumber.textContent = ' r - 0';
+    note.dataset.sendCount = 0;
+    note.dataset.receiveCount = 0;
+  });
+
+  allNotes.forEach(note => {
+    const textarea = note.querySelector('textarea');
+    const filenameDiv = note.querySelector('.filename');
+    if (!textarea || !filenameDiv) return;
+    const thisBase = getBaseName(filenameDiv.textContent);
+    const text = textarea.value;
+
+    const mentionRegex = /\[@([^\]]+)\]/g;
+    let match;
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const mentioned = match[1];
+      note.dataset.sendCount = (parseInt(note.dataset.sendCount) || 0) + 1;
+      note.querySelector('.send-number').textContent = ` s - ${note.dataset.sendCount}`;
+      if (noteMap[mentioned]) {
+        noteMap[mentioned].dataset.receiveCount = (parseInt(noteMap[mentioned].dataset.receiveCount) || 0) + 1;
+        noteMap[mentioned].querySelector('.receive-number').textContent = ` r - ${noteMap[mentioned].dataset.receiveCount}`;
+      }
+    }
+  });
+}
+
 function createNote(x, y, text = "New note", existingFileHandle = null) {
   let noteFileHandle = existingFileHandle;
-
-  // Unique note ID for localStorage key
   let noteId = existingFileHandle ? existingFileHandle.name : `note-${Date.now()}`;
   let noteKey = `note-history-${noteId}`;
-
-  // Load history from localStorage or start fresh
   let logs = JSON.parse(localStorage.getItem(noteKey)) || [];
   let currentLogIndex = logs.length ? logs.length - 1 : null;
 
@@ -59,7 +95,6 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
   const colorPicker = document.createElement('div');
   colorPicker.className = 'color-picker';
   colorPicker.style.background = '#fff8a6';
-
   const colorOptions = document.createElement('div');
   colorOptions.className = 'color-options';
 
@@ -79,9 +114,7 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
     colorOption.addEventListener('click', (e) => {
       e.stopPropagation();
       note.className = 'note';
-      if (color.name !== 'default') {
-        note.classList.add(color.name);
-      }
+      if (color.name !== 'default') note.classList.add(color.name);
       colorPicker.style.background = color.value;
       colorPicker.classList.remove('expanded');
     });
@@ -95,70 +128,53 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
   });
 
   let isEditing = false;
-  let isSaved = !!existingFileHandle;
 
   const textarea = document.createElement('textarea');
   textarea.value = text;
   textarea.setAttribute('spellcheck', 'false');
   textarea.setAttribute('readonly', 'readonly');
   textarea.style.background = '#f9f9f9';
-
-  function autoResizeTextarea() {
+  textarea.addEventListener('input', () => {
     textarea.style.height = 'auto';
     textarea.style.height = textarea.scrollHeight + 'px';
-  }
-  autoResizeTextarea();
-  textarea.addEventListener('input', autoResizeTextarea);
+  });
+  textarea.dispatchEvent(new Event('input'));
 
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
 
   const editBtn = document.createElement('button');
   editBtn.textContent = 'Edit';
-  editBtn.onclick = function () {
-    if (!isEditing) {
-      textarea.removeAttribute('readonly');
-      textarea.style.background = 'transparent';
-      textarea.focus();
-      isEditing = true;
-      showButtons();
-    } else {
-      isEditing = false;
-      textarea.setAttribute('readonly', 'readonly');
-      textarea.style.background = '#f9f9f9';
-      showButtons();
-    }
+  editBtn.onclick = () => {
+    isEditing = !isEditing;
+    textarea.readOnly = !isEditing;
+    textarea.style.background = isEditing ? 'transparent' : '#f9f9f9';
+    showButtons();
+    if (isEditing) textarea.focus();
   };
 
   const saveBtn = document.createElement('button');
   saveBtn.textContent = 'Save';
   saveBtn.style.display = 'none';
-  saveBtn.onclick = async function() {
-    textarea.setAttribute('readonly', 'readonly');
+  saveBtn.onclick = async () => {
+    textarea.readOnly = true;
     textarea.style.background = '#f9f9f9';
     isEditing = false;
 
     const now = new Date();
     const newEntry = { text: textarea.value, saved: now.toISOString() };
     logs.push(newEntry);
-    currentLogIndex = logs.length - 1;
     localStorage.setItem(noteKey, JSON.stringify(logs));
     showButtons();
 
     try {
       if (!directoryHandle) {
-        // Fallback to download if no folder selected
-        const blob = new Blob([textarea.value], {type: 'text/plain'});
+        const blob = new Blob([textarea.value], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
         let fileName = await promptFileName([]);
-        if (!fileName) {
-          alert('Save cancelled.');
-          return;
-        }
-        
+        if (!fileName) return alert('Save cancelled.');
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
@@ -168,116 +184,82 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
         return;
       }
 
-      try {
-        if (!noteFileHandle) {
-          const existingNames = await getExistingFileNames();
-          let fileName = await promptFileName(existingNames);
-          if (!fileName) {
-            alert('Save cancelled.');
-            return;
-          }
-          noteFileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
-          noteId = fileName;
-          noteKey = `note-history-${noteId}`;
-        }
-
-        const writable = await noteFileHandle.createWritable();
-        await writable.write(textarea.value);
-        await writable.close();
-        alert('Note saved.');
-        isSaved = true;
-      } catch (writeError) {
-        console.error('Write error:', writeError);
-        alert('Failed to save to folder. Trying download instead...');
-        // Fallback to download
-        const blob = new Blob([textarea.value], {type: 'text/plain'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `note-${Date.now()}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      if (!noteFileHandle) {
+        const existingNames = await getExistingFileNames();
+        let fileName = await promptFileName(existingNames);
+        if (!fileName) return alert('Save cancelled.');
+        noteFileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
+        noteId = fileName;
+        noteKey = `note-history-${noteId}`;
+        
+        // ✅ ADD THIS LINE to update the visible filename
+        filenameDisplay.textContent = getBaseName(fileName);
       }
-    } catch (error) {
-      console.error('Error saving file:', error);
-      alert('Failed to save note. Please try again.');
+
+      const writable = await noteFileHandle.createWritable();
+      await writable.write(textarea.value);
+      await writable.close();
+      alert('Note saved.');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save.');
     }
+
+    updateSendReceiveCounts();
   };
 
-  textarea.addEventListener('input', function () {
-    if (isEditing) {
-      saveBtn.style.display = '';
-    }
+  textarea.addEventListener('input', () => {
+    if (isEditing) saveBtn.style.display = '';
   });
-
-  const logDropdown = document.createElement('select');
-  logDropdown.className = 'log-dropdown';
 
   const logBtn = document.createElement('button');
   logBtn.textContent = 'Log';
-  const noteNumber = document.createElement('span');
-  noteNumber.className = 'note-number';
-  noteNumber.textContent = ' - 0';  // Initial value
-  logBtn.appendChild(noteNumber);
-  logBtn.onclick = function (e) {
-    e.stopPropagation();
-    if (logs.length === 0) {
-      alert('No logs yet.');
-      return;
-    }
+  const sendNumber = document.createElement('span');
+  sendNumber.className = 'note-number send-number';
+  sendNumber.textContent = ' s - 0';
+  const receiveNumber = document.createElement('span');
+  receiveNumber.className = 'note-number receive-number';
+  receiveNumber.textContent = ' r - 0';
+  logBtn.appendChild(sendNumber);
+  logBtn.appendChild(receiveNumber);
+
+  const logDropdown = document.createElement('select');
+  logDropdown.className = 'log-dropdown';
+  logDropdown.style.display = 'none';
+
+  logBtn.onclick = () => {
     logDropdown.innerHTML = '';
-    logs.forEach((log, idx) => {
+    logs.forEach((log, i) => {
       const option = document.createElement('option');
-      option.value = idx;
-      option.textContent = `#${idx + 1} - ${formatDate(new Date(log.saved))}`;
+      option.value = i;
+      option.textContent = `#${i + 1} - ${formatDate(new Date(log.saved))}`;
       logDropdown.appendChild(option);
     });
     logDropdown.style.display = logDropdown.style.display === 'none' ? 'block' : 'none';
-    if (logDropdown.style.display === 'block') {
-      logDropdown.focus();
-    }
   };
 
-  logDropdown.addEventListener('mousedown', (e) => e.stopPropagation());
-  logDropdown.onchange = function () {
+  logDropdown.onchange = () => {
     const idx = parseInt(logDropdown.value, 10);
-    if (!isNaN(idx) && logs[idx]) {
+    if (logs[idx]) {
       textarea.value = logs[idx].text;
-      autoResizeTextarea();
-      currentLogIndex = idx;
+      textarea.dispatchEvent(new Event('input'));
     }
     logDropdown.style.display = 'none';
   };
 
-  btnContainer.appendChild(editBtn);
-  btnContainer.appendChild(saveBtn);
-  btnContainer.appendChild(logBtn);
-  btnContainer.appendChild(logDropdown);
-
-  // Add filename display
   const filenameDisplay = document.createElement('div');
   filenameDisplay.className = 'filename';
-  if (existingFileHandle) {
-    filenameDisplay.textContent = existingFileHandle.name.replace('.txt', '');
-  } else {
-    filenameDisplay.textContent = 'New Note';
-  }
+  filenameDisplay.textContent = existingFileHandle ? getBaseName(existingFileHandle.name) : 'New Note';
 
-  note.appendChild(colorPicker);
-  note.appendChild(btnContainer);
-  note.appendChild(filenameDisplay);  // Add filename before textarea
-  note.appendChild(textarea);
+  btnContainer.append(editBtn, saveBtn, logBtn, logDropdown);
+  note.append(colorPicker, btnContainer, filenameDisplay, textarea);
   canvas.appendChild(note);
 
   function showButtons() {
-    editBtn.style.display = '';
     saveBtn.style.display = isEditing ? '' : 'none';
-    logBtn.style.display = '';
   }
 
-  note.addEventListener('mousedown', function (ev) {
+  note.addEventListener('mousedown', ev => {
     if (['TEXTAREA', 'BUTTON', 'SELECT'].includes(ev.target.tagName)) return;
     dragNote = note;
     offsetX = ev.offsetX;
@@ -285,68 +267,51 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
     note.style.zIndex = 10;
   });
 
-  note.addEventListener('click', function () {
+  note.addEventListener('click', () => {
     note.style.zIndex = 10;
     Array.from(canvas.children).forEach(child => {
       if (child !== note) child.style.zIndex = 1;
     });
   });
 
-  showButtons();
+  updateSendReceiveCounts(); // <--- Important
 }
 
-addNoteBtn.addEventListener('click', function () {
+addNoteBtn.addEventListener('click', () => {
   createNote(60 + Math.random() * 300, 60 + Math.random() * 200);
 });
 
-canvas.addEventListener('dblclick', function (e) {
+canvas.addEventListener('dblclick', (e) => {
   if (e.target !== canvas) return;
   createNote(e.clientX - canvas.getBoundingClientRect().left,
              e.clientY - canvas.getBoundingClientRect().top);
 });
 
-document.addEventListener('mousemove', function (ev) {
+document.addEventListener('mousemove', (ev) => {
   if (!dragNote) return;
   dragNote.style.left = (ev.clientX - offsetX) + 'px';
   dragNote.style.top = (ev.clientY - offsetY) + 'px';
 });
 
-document.addEventListener('mouseup', function () {
+document.addEventListener('mouseup', () => {
   dragNote = null;
 });
 
-selectFolderBtn.addEventListener('click', async function () {
+selectFolderBtn.addEventListener('click', async () => {
   try {
-    if (!window.showDirectoryPicker) {
-      throw new Error('File System Access API not supported');
-    }
-    
-    directoryHandle = await window.showDirectoryPicker({
-      startIn: 'documents',
-      mode: 'readwrite'
-    });
-    
-    // Verify we have permission to write
-    const options = { mode: 'readwrite' };
-    await directoryHandle.requestPermission(options);
-    
+    directoryHandle = await window.showDirectoryPicker({ startIn: 'documents', mode: 'readwrite' });
+    await directoryHandle.requestPermission({ mode: 'readwrite' });
+
     addNoteBtn.disabled = false;
-    
-    // Load existing .txt notes from the directory
     for await (const [name, handle] of directoryHandle.entries()) {
       if (handle.kind === 'file' && name.endsWith('.txt')) {
         const file = await handle.getFile();
         const text = await file.text();
-        createNote(
-          60 + Math.random() * 300, 
-          60 + Math.random() * 200, 
-          text,
-          handle
-        );
+        createNote(60 + Math.random() * 300, 60 + Math.random() * 200, text, handle);
       }
     }
   } catch (err) {
     console.error('Folder selection error:', err);
-    alert('Folder selection cancelled or failed. Notes will be downloaded instead.');
+    alert('Failed to open folder. Notes will be downloaded instead.');
   }
 });
