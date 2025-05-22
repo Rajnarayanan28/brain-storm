@@ -1,6 +1,41 @@
 const canvas = document.getElementById('canvas');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const selectFolderBtn = document.getElementById('selectFolderBtn');
+const toggleGraphBtn = document.getElementById('toggleGraphBtn');
+
+let graphWindow = null;
+toggleGraphBtn.addEventListener('click', () => {
+  if (!graphWindow || graphWindow.closed) {
+    graphWindow = window.open('graph.html', 'NotesGraph', 'width=900,height=700');
+    setTimeout(sendGraphData, 500);
+  } else {
+    graphWindow.focus();
+    sendGraphData();
+  }
+});
+
+function sendGraphData() {
+  const allNotes = Array.from(document.querySelectorAll('.note'));
+  const nodes = allNotes.map(note => ({
+    id: note.querySelector('.filename').textContent
+  }));
+  const links = [];
+  allNotes.forEach(sourceNote => {
+    const sourceId = sourceNote.querySelector('.filename').textContent;
+    const mentions = sourceNote.querySelector('textarea').value.match(/\[@([^\]]+)\]/g);
+    if (mentions) {
+      mentions.forEach(tag => {
+        const targetId = tag.replace(/^\[@|\]$/g, '');
+        if (nodes.some(n => n.id === targetId)) {
+          links.push({ source: sourceId, target: targetId });
+        }
+      });
+    }
+  });
+  if (graphWindow && !graphWindow.closed) {
+    graphWindow.postMessage({ type: 'graph-data', nodes, links }, '*');
+  }
+}
 
 let dragNote = null, offsetX = 0, offsetY = 0;
 let directoryHandle = null;
@@ -191,8 +226,6 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
         noteFileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
         noteId = fileName;
         noteKey = `note-history-${noteId}`;
-        
-        // ✅ ADD THIS LINE to update the visible filename
         filenameDisplay.textContent = getBaseName(fileName);
       }
 
@@ -206,6 +239,7 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
     }
 
     updateSendReceiveCounts();
+    sendGraphData();
   };
 
   textarea.addEventListener('input', () => {
@@ -274,7 +308,8 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
     });
   });
 
-  updateSendReceiveCounts(); // <--- Important
+  updateSendReceiveCounts();
+  sendGraphData();
 }
 
 addNoteBtn.addEventListener('click', () => {
@@ -310,6 +345,8 @@ selectFolderBtn.addEventListener('click', async () => {
         createNote(60 + Math.random() * 300, 60 + Math.random() * 200, text, handle);
       }
     }
+
+    sendGraphData();
   } catch (err) {
     console.error('Folder selection error:', err);
     alert('Failed to open folder. Notes will be downloaded instead.');

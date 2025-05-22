@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notes Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #f5f7fa; }
+    #graph { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <svg id="graph"></svg>
+  <script>
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'graph-data') {
+        renderGraph(event.data.nodes, event.data.links);
+      }
+    });
+    function renderGraph(nodes, links) {
+      const svg = d3.select("#graph");
+      svg.selectAll("*").remove();
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(120))
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .on("tick", ticked);
+      const link = svg.append("g")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.4)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke-width", 1.5);
+      const node = svg.append("g")
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", 8)
+        .attr("fill", "#4a6bff");
+      const label = svg.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .attr("font-size", 14)
+        .attr("fill", "#222")
+        .attr("text-anchor", "middle")
+        .attr("dy", -14)
+        .text(d => d.id);
+      function ticked() {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        node
+          .attr("cx", d => d.x)
+          .attr("cy", d => d.y);
+        label
+          .attr("x", d => d.x)
+          .attr("y", d => d.y);
+      }
+    }
+  </script>
+</body>
+</html>
