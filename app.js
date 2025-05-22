@@ -217,6 +217,10 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
 
   const logBtn = document.createElement('button');
   logBtn.textContent = 'Log';
+  const noteNumber = document.createElement('span');
+  noteNumber.className = 'note-number';
+  noteNumber.textContent = ' - 0';  // Initial value
+  logBtn.appendChild(noteNumber);
   logBtn.onclick = function (e) {
     e.stopPropagation();
     if (logs.length === 0) {

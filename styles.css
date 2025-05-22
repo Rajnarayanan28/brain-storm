@@ -198,3 +198,13 @@ body, html {
 .note.brown {
   background: linear-gradient(135deg, #efd9c1 0%, #d2b48c 100%);
 }
+
+.note .note-number {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.8em;
+  color: #666;
+  background: rgba(255,255,255,0.5);
+  padding: 0 4px;
+  border-radius: 3px;
+}
