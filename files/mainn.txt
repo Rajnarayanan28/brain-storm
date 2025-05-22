@@ -1,1 +1,1 @@
-New note [@main]
+New note [@main] [@main]

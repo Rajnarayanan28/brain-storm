@@ -17,7 +17,8 @@ toggleGraphBtn.addEventListener('click', () => {
 function sendGraphData() {
   const allNotes = Array.from(document.querySelectorAll('.note'));
   const nodes = allNotes.map(note => ({
-    id: note.querySelector('.filename').textContent
+    id: note.querySelector('.filename').textContent,
+    content: note.querySelector('textarea').value
   }));
   const links = [];
   allNotes.forEach(sourceNote => {
