@@ -252,8 +252,18 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
   btnContainer.appendChild(logBtn);
   btnContainer.appendChild(logDropdown);
 
+  // Add filename display
+  const filenameDisplay = document.createElement('div');
+  filenameDisplay.className = 'filename';
+  if (existingFileHandle) {
+    filenameDisplay.textContent = existingFileHandle.name.replace('.txt', '');
+  } else {
+    filenameDisplay.textContent = 'New Note';
+  }
+
   note.appendChild(colorPicker);
   note.appendChild(btnContainer);
+  note.appendChild(filenameDisplay);  // Add filename before textarea
   note.appendChild(textarea);
   canvas.appendChild(note);
 

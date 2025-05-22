@@ -69,6 +69,19 @@ body, html {
   transform: translateY(-2px);
 }
 
+.note .filename {
+  font-weight: bold;
+  font-size: 0.9em;  /* Added this line to make text smaller */
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .note textarea {
   width: 100%;
   min-height: 100%;
