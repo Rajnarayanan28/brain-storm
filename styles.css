@@ -1,185 +1,228 @@
 body, html {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  #canvas {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  
-  #controls {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    gap: 10px;
-    z-index: 100;
-  }
-  
-  #selectFolderBtn,
-  #addNoteBtn {
-    padding: 10px 20px;
-    background: #4a6bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    font-weight: 500;
-  }
-  
-  #selectFolderBtn:hover,
-  #addNoteBtn:hover {
-    background: #3a5bef;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  }
-  
-  .note {
-    will-change: transform;
-    position: absolute;
-    min-width: 250px;
-    min-height: 200px;
-    background: linear-gradient(135deg, #fff8a6 0%, #fff1a6 100%);
-    border: none;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    cursor: move;
-    user-select: none;
-    resize: both;
-    overflow: visible;
-    transition: all 0.2s ease;
-  }
-  
-  .note:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    transform: translateY(-2px);
-  }
-  
-  .note textarea {
-    width: 100%;
-    min-height: 100%;
-    border: none;
-    background: transparent;
-    resize: none;
-    font-size: 1em;
-    outline: none;
-    box-sizing: border-box;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.5;
-    padding: 8px;
-    margin-top: 8px;
-  }
-  
-  .btn-container {
-    position: relative;
-    display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-  
-  .note button {
-    font-size: 0.9em;
-    cursor: pointer;
-    background: rgba(255,255,255,0.7);
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 4px;
-    padding: 4px 8px;
-    transition: all 0.2s ease;
-  }
-  
-  .note button:hover {
-    background: rgba(255,255,255,0.9);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  
-  .log-dropdown {
-    position: absolute;
-    z-index: 100;
-    left: 60px;
-    top: 28px;
-    min-width: 180px;
-    margin: 0;
-    padding: 4px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: white;
-    display: none;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .color-picker {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    width: 20px;
-    height: 20px;
-    background: #fff8a6;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
-    overflow: hidden;
-  }
-  
-  .color-picker.expanded {
-    width: 132px;
-    padding: 4px;
-    transform: translateX(0);
-  }
-  
-  .color-options {
-    display: none;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  
-  .color-picker.expanded .color-options {
-    display: flex;
-  }
-  
-  .color-option {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-  }
-  
-  .color-option:hover {
-    transform: scale(1.2);
-  }
-  
-  .note.green {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-  }
-  
-  .note.pink {
-    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-  }
-  
-  .note.orange {
-    background: linear-gradient(135deg, #ffe8cc 0%, #ffdab9 100%);
-  }
-  
-  .note.purple {
-    background: linear-gradient(135deg, #e2d4f0 0%, #d6b3f0 100%);
-  }
-  
-  .note.brown {
-    background: linear-gradient(135deg, #efd9c1 0%, #d2b48c 100%);
-  }
-  
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 🎯 NEW BUTTON WRAPPER FOR FIXED TOP-LEFT CORNER LAYOUT */
+#topControls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
+}
+
+#topControls button {
+  padding: 10px 20px;
+  background: #4a6bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+#topControls button:hover {
+  background: #3a5bef;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* ✂️ REMOVE INDIVIDUAL POSITIONING RULES FOR BUTTONS (delete old #addNoteBtn and #openFolderBtn styles) */
+
+.note {
+  will-change: transform;
+  position: absolute;
+  min-width: 250px;
+  min-height: 200px;
+  background: linear-gradient(135deg, #fff8a6 0%, #fff1a6 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: move;
+  user-select: none;
+  resize: both;
+  overflow: visible;
+  transition: all 0.2s ease;
+}
+
+.note:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.note .filename {
+  font-weight: bold;
+  font-size: 0.9em;  /* Added this line to make text smaller */
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note textarea {
+  width: 100%;
+  min-height: 100%;
+  border: none;
+  background: transparent;
+  resize: both;
+  font-size: 1em;
+  outline: none;
+  box-sizing: border-box;
+  overflow: auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+
+.btn-container {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.note button {
+  font-size: 0.9em;
+  cursor: pointer;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+}
+
+.note button:hover {
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.log-dropdown {
+  position: absolute;
+  z-index: 100;
+  left: 60px;
+  top: 28px;
+  min-width: 180px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: white;
+  display: none;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.color-picker {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 20px;
+  height: 20px;
+  background: #fff8a6;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.color-picker.expanded {
+  width: 132px;
+  padding: 4px;
+  transform: translateX(0);
+}
+
+.color-options {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.color-picker.expanded .color-options {
+  display: flex;
+}
+
+.color-option {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.color-option:hover {
+  transform: scale(1.2);
+}
+
+.note.green {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.note.pink {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.note.orange {
+  background: linear-gradient(135deg, #ffe8cc 0%, #ffdab9 100%);
+}
+
+.note.purple {
+  background: linear-gradient(135deg, #e2d4f0 0%, #d6b3f0 100%);
+}
+
+.note.brown {
+  background: linear-gradient(135deg, #efd9c1 0%, #d2b48c 100%);
+}
+
+.note .note-number {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.8em;
+  color: #666;
+  background: rgba(255,255,255,0.5);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.note .send-number {
+  color: #4a6bff;
+}
+
+.note .receive-number {
+  color: #28a745;
+}
+
+#graph {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+}
