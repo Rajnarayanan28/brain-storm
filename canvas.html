@@ -61,7 +61,14 @@
     <button id="toggleGraphBtn">Open Graph</button>
   </div>
   <div id="canvas"></div>
-  <div id="sidebar"></div>
+  <div id="sidebar">
+    <div class="tabs">
+      <button id="openNotesTabBtn" class="active-tab">Open Notes</button>
+      <button id="folderFilesTabBtn">Folder Files</button>
+    </div>
+    <div id="openNotesContent" class="tab-content active"></div>
+    <div id="folderFilesContent" class="tab-content"></div>
+  </div>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="app.js"></script>
 </body>

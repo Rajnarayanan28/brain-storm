@@ -249,3 +249,52 @@ body, html {
 .sidebar-entry button:hover {
   color: #d11a2a;
 }
+
+#sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: auto;
+    width: 250px;
+    height: 100%;
+    background: #f4f4f4;
+    border-left: 1px solid #ccc;
+    z-index: 100;
+    overflow-y: auto;
+}
+#sidebar .tabs {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+}
+#sidebar .tabs button {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.2s;
+}
+#sidebar .tabs button.active-tab {
+    background: #fff;
+    border-bottom: 2px solid #007bff;
+    font-weight: bold;
+}
+#sidebar .tab-content {
+    display: none;
+}
+#sidebar .tab-content.active {
+    display: block;
+}
+.sidebar-entry button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+  vertical-align: middle;
+  color: #555;
+  transition: color 0.2s;
+}
+.sidebar-entry button:hover {
+  color: #d11a2a;
+}

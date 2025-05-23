@@ -118,6 +118,14 @@ function updateSendReceiveCounts() {
 }
 
 function createNote(x, y, text = "New note", existingFileHandle = null) {
+  const baseName = existingFileHandle ? getBaseName(existingFileHandle.name) : null;
+  if (baseName && Array.from(document.querySelectorAll('.note .filename')).some(div => div.textContent === baseName)) {
+    // Note already open, don't create duplicate
+    return;
+  }
+  // Set default position if not specified
+  x = x || 100; // Default X position
+  y = y || 100; // Default Y position
   let noteFileHandle = existingFileHandle;
   let noteId = existingFileHandle ? existingFileHandle.name : `note-${Date.now()}`;
   let noteKey = `note-history-${noteId}`;
@@ -406,11 +414,63 @@ function createSidebarEntry(note, filename, fileHandle) {
     });
     note.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
-  sidebar.appendChild(entry);
+  openNotesContent.appendChild(entry);
   note.addEventListener('click', () => {
     entry.classList.add('active');
     Array.from(sidebar.children).forEach(child => {
       if (child !== entry) child.classList.remove('active');
     });
   });
+}
+
+const openNotesTabBtn = document.getElementById('openNotesTabBtn');
+const folderFilesTabBtn = document.getElementById('folderFilesTabBtn');
+const openNotesContent = document.getElementById('openNotesContent');
+const folderFilesContent = document.getElementById('folderFilesContent');
+
+openNotesTabBtn.addEventListener('click', () => {
+  openNotesTabBtn.classList.add('active-tab');
+  folderFilesTabBtn.classList.remove('active-tab');
+  openNotesContent.classList.add('active');
+  folderFilesContent.classList.remove('active');
+});
+
+folderFilesTabBtn.addEventListener('click', () => {
+  folderFilesTabBtn.classList.add('active-tab');
+  openNotesTabBtn.classList.remove('active-tab');
+  folderFilesContent.classList.add('active');
+  openNotesContent.classList.remove('active');
+  // Populate the folder files list
+  if (directoryHandle) populateFolderFilesTab(directoryHandle);
+});
+
+async function populateFolderFilesTab(handle) {
+  folderFilesContent.innerHTML = '';
+  for await (const [name, entryHandle] of handle.entries()) {
+    if (entryHandle.kind === 'file' && name.endsWith('.txt')) {
+      const fileEntry = document.createElement('div');
+      fileEntry.className = 'folder-file-entry';
+      fileEntry.textContent = name;
+      fileEntry.style.cursor = 'pointer';
+      fileEntry.onclick = async () => {
+        const baseName = getBaseName(name);
+        const stillOpen = Array.from(document.querySelectorAll('.note .filename'))
+          .some(div => div.textContent === baseName);
+        if (stillOpen) {
+          const note = Array.from(document.querySelectorAll('.note')).find(n =>
+            n.querySelector('.filename').textContent === baseName
+          );
+          if (note) {
+            note.style.zIndex = 10;
+            note.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return;
+        }
+        const file = await entryHandle.getFile();
+        const text = await file.text();
+        createNote(60 + Math.random() * 300, 60 + Math.random() * 200, text, entryHandle);
+      };
+      folderFilesContent.appendChild(fileEntry);
+    }
+  }
 }
