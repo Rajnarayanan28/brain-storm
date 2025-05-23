@@ -11,13 +11,28 @@
 </head>
 <body>
   <svg id="graph"></svg>
+  <div id="sidebar" style="position:fixed;top:0;right:0;width:340px;height:100vh;background:#fff;box-shadow:-2px 0 8px #0001;padding:0;overflow-y:auto;z-index:10;display:block;">
+    <div id="noteNotifications" style="display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px 10px 18px 10px;"></div>
+  </div>
+  <style>
+    body, #sidebar, .note-notification, .note-notification pre, .note-notification strong, .note-notification button {
+      font-family: Arial, sans-serif !important;
+    }
+    @keyframes slideIn { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .note-notification { background:#fff;box-shadow:0 4px 16px #0002;border-radius:12px;padding:18px 20px 14px 20px;min-width:220px;max-width:320px;position:relative;animation:slideIn 0.3s; margin-bottom:8px; }
+    .note-notification button { position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2em;cursor:pointer;color:#888; }
+    .note-notification strong { font-size:1.1em; }
+    .note-notification pre { white-space:pre-wrap;background:#f5f5f5;padding:8px 0 0 0;margin:0; }
+  </style>
   <script>
     window.addEventListener('message', function(event) {
       if (event.data && event.data.type === 'graph-data') {
         renderGraph(event.data.nodes, event.data.links);
       }
     });
+    let currentNodes = [];
     function renderGraph(nodes, links) {
+      currentNodes = nodes;
       const svg = d3.select("#graph");
       svg.selectAll("*").remove();
       const width = window.innerWidth;
@@ -63,7 +78,10 @@
             d.fx = null;
             d.fy = null;
           })
-        );
+        )
+        node.on("click", (event, d) => {
+          showNoteNotification(d);
+        });
       const label = g.append("g")
         .selectAll("text")
         .data(nodes)
@@ -87,6 +105,40 @@
           .attr("x", d => d.x)
           .attr("y", d => d.y);
       }
+    }
+    function showSidebar(noteId) {
+      const sidebar = document.getElementById('sidebar');
+      const node = currentNodes.find(n => n.id === noteId);
+      if (node) {
+        sidebar.innerHTML = `<h2 style='margin-top:0;'>${node.id}</h2><pre style='white-space:pre-wrap;font-family:inherit;background:#f5f5f5;padding:12px;border-radius:8px;'>${node.content.replace(/</g,'&lt;')}</pre>`;
+        sidebar.style.display = 'block';
+      }
+    }
+    const notifColors = [
+      '#ffe066', // yellow
+      '#ffd6e0', // pink
+      '#b5ead7', // mint
+      '#c7ceea', // light blue
+      '#f6d186', // peach
+      '#f9c6c9', // light red
+      '#d0f4de', // pale green
+      '#f7b7a3', // coral
+      '#e2f0cb', // light lime
+      '#f3e9d2'  // beige
+    ];
+    let notifColorIdx = 0;
+    function showNoteNotification(note) {
+      const container = document.getElementById('noteNotifications');
+      const notif = document.createElement('div');
+      notif.className = 'note-notification';
+      notif.style.background = notifColors[notifColorIdx % notifColors.length];
+      notifColorIdx++;
+      notif.innerHTML = `<strong>${note.id}</strong><br><pre>${note.content.replace(/</g,'&lt;')}</pre>`;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.onclick = () => notif.remove();
+      notif.appendChild(closeBtn);
+      container.prepend(notif);
     }
   </script>
 </body>
