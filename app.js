@@ -41,6 +41,31 @@ function sendGraphData() {
 
 let dragNote = null, offsetX = 0, offsetY = 0;
 let directoryHandle = null;
+const currentFolderDisplay = document.getElementById('currentFolderDisplay');
+const clearFolderBtn = document.getElementById('clearFolderBtn');
+
+clearFolderBtn.addEventListener('click', async () => {
+  if (!confirm('Clear saved folder and close open notes?')) return;
+  try {
+    // remove from IndexedDB
+    const req = indexedDB.open('notes-app-handles', 1);
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction('handles', 'readwrite');
+      tx.objectStore('handles').delete('directory');
+      tx.oncomplete = () => db.close();
+      tx.onerror = () => db.close();
+    };
+    req.onerror = () => {};
+  } catch (e) {
+    console.warn('Could not clear saved handle', e);
+  }
+  directoryHandle = null;
+  currentFolderDisplay.textContent = '(none)';
+  // remove loaded notes and sidebar entries
+  Array.from(document.querySelectorAll('.note')).forEach(n => n.remove());
+  openNotesContent.innerHTML = '';
+});
 
 function formatDate(date) {
   return date.toLocaleString();
@@ -64,17 +89,82 @@ async function promptFileName(existingNames) {
   }
 }
 
-async function getExistingFileNames() {
-  if (!directoryHandle) return [];
+async function getExistingFileNames(handleParam) {
+  // Use provided handle or fall back to the currently selected directoryHandle
+  const handle = handleParam || directoryHandle;
+  if (!handle) return [];
   const names = [];
-  for await (const [name, handle] of directoryHandle.entries()) {
-    if (handle.kind === 'file') names.push(name);
+  for await (const [name, entryHandle] of handle.entries()) {
+    if (entryHandle.kind === 'file' && name.endsWith('.txt')) names.push(name);
   }
   return names;
 }
 
+// Persist the directory handle in IndexedDB so the app can remember the chosen folder
+function saveDirectoryHandle(handle) {
+  return new Promise((resolve, reject) => {
+    try {
+      const req = indexedDB.open('notes-app-handles', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('handles', 'readwrite');
+        const store = tx.objectStore('handles');
+        store.put(handle, 'directory');
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = (e) => { db.close(); reject(e); };
+      };
+      req.onerror = (e) => reject(e);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function loadSavedDirectoryHandle() {
+  return new Promise((resolve, reject) => {
+    try {
+      const req = indexedDB.open('notes-app-handles', 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore('handles');
+      };
+      req.onsuccess = async () => {
+        const db = req.result;
+        const tx = db.transaction('handles', 'readonly');
+        const store = tx.objectStore('handles');
+        const getReq = store.get('directory');
+        getReq.onsuccess = async () => {
+          db.close();
+          const handle = getReq.result;
+          if (handle) {
+            // Check permission
+            const perm = await handle.queryPermission({ mode: 'readwrite' });
+            if (perm === 'granted' || await handle.requestPermission({ mode: 'readwrite' }) === 'granted') {
+              directoryHandle = handle;
+              resolve(handle);
+              return;
+            }
+          }
+          resolve(null);
+        };
+        getReq.onerror = (e) => { db.close(); resolve(null); };
+      };
+      req.onerror = (e) => reject(e);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 function getBaseName(filename) {
   return filename.replace(/\.txt$/, '');
+}
+
+function setCurrentFolderName(name) {
+  if (currentFolderDisplay) currentFolderDisplay.textContent = name || '(none)';
 }
 
 function updateSendReceiveCounts() {
@@ -184,6 +274,134 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
     textarea.style.height = textarea.scrollHeight + 'px';
   });
   textarea.dispatchEvent(new Event('input'));
+
+  // --- Mention / autofill suggestions for [@ trigger ---
+  const suggestionBox = document.createElement('div');
+  suggestionBox.className = 'mention-suggestions';
+  Object.assign(suggestionBox.style, {
+    position: 'absolute',
+    display: 'none',
+    minWidth: '160px',
+    maxHeight: '220px',
+    overflowY: 'auto',
+    background: 'white',
+    border: '1px solid #ddd',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+    zIndex: 9999,
+    padding: '4px',
+    borderRadius: '6px'
+  });
+
+  let suggestionItems = [];
+  let selectedSuggestion = -1;
+
+  async function updateSuggestionsForTerm(term) {
+    suggestionBox.innerHTML = '';
+    selectedSuggestion = -1;
+    if (!term) {
+      suggestionBox.style.display = 'none';
+      return;
+    }
+    const names = (await getExistingFileNames()).map(n => getBaseName(n));
+    const filtered = names.filter(n => n.toLowerCase().startsWith(term.toLowerCase()));
+    if (!filtered.length) {
+      suggestionBox.style.display = 'none';
+      return;
+    }
+    filtered.forEach((name, i) => {
+      const it = document.createElement('div');
+      it.textContent = name;
+      it.tabIndex = 0;
+      Object.assign(it.style, { padding: '6px 8px', cursor: 'pointer', borderRadius: '4px' });
+      it.addEventListener('click', () => applySuggestion(name));
+      it.addEventListener('mouseenter', () => {
+        setSelected(i);
+      });
+      suggestionBox.appendChild(it);
+    });
+    suggestionItems = Array.from(suggestionBox.children);
+    suggestionBox.style.display = '';
+    positionSuggestionBox();
+  }
+
+  function setSelected(idx) {
+    if (selectedSuggestion >= 0 && suggestionItems[selectedSuggestion]) {
+      suggestionItems[selectedSuggestion].style.background = '';
+    }
+    selectedSuggestion = idx;
+    if (selectedSuggestion >= 0 && suggestionItems[selectedSuggestion]) {
+      suggestionItems[selectedSuggestion].style.background = '#eef2ff';
+      suggestionItems[selectedSuggestion].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function applySuggestion(name) {
+    const pos = textarea.selectionStart;
+    const before = textarea.value.slice(0, pos);
+    const after = textarea.value.slice(pos);
+    const lastTrigger = before.lastIndexOf('[@');
+    if (lastTrigger === -1) return;
+    const newBefore = before.slice(0, lastTrigger) + '[@' + name + ']';
+    textarea.value = newBefore + after;
+    textarea.dispatchEvent(new Event('input'));
+    const newPos = newBefore.length;
+    textarea.selectionStart = textarea.selectionEnd = newPos;
+    hideSuggestions();
+    textarea.focus();
+    updateSendReceiveCounts();
+  }
+
+  function hideSuggestions() {
+    suggestionBox.style.display = 'none';
+    suggestionItems = [];
+    selectedSuggestion = -1;
+  }
+
+  function positionSuggestionBox() {
+    const taRect = textarea.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+    suggestionBox.style.left = (taRect.left - canvasRect.left) + 'px';
+    suggestionBox.style.top = (taRect.bottom - canvasRect.top + 6) + 'px';
+    const sbRect = suggestionBox.getBoundingClientRect();
+    if (sbRect.right > canvasRect.right) {
+      suggestionBox.style.left = (canvasRect.right - sbRect.width - canvasRect.left - 8) + 'px';
+    }
+  }
+
+  textarea.addEventListener('keydown', (ev) => {
+    if (suggestionBox.style.display === '' && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp' || ev.key === 'Enter' || ev.key === 'Escape')) {
+      ev.preventDefault();
+      if (ev.key === 'ArrowDown') setSelected(Math.min(selectedSuggestion + 1, suggestionItems.length - 1));
+      else if (ev.key === 'ArrowUp') setSelected(Math.max(selectedSuggestion - 1, 0));
+      else if (ev.key === 'Enter') {
+        if (selectedSuggestion >= 0 && suggestionItems[selectedSuggestion]) {
+          applySuggestion(suggestionItems[selectedSuggestion].textContent);
+        } else {
+          hideSuggestions();
+        }
+      } else if (ev.key === 'Escape') {
+        hideSuggestions();
+      }
+    }
+  });
+
+  textarea.addEventListener('input', async () => {
+    const pos = textarea.selectionStart;
+    const before = textarea.value.slice(0, pos);
+    const lastTrigger = before.lastIndexOf('[@');
+    if (lastTrigger === -1) { hideSuggestions(); return; }
+    const term = before.slice(lastTrigger + 2);
+    const m = term.match(/^([\w\- ]{0,40})$/);
+    if (!m) { hideSuggestions(); return; }
+    await updateSuggestionsForTerm(m[1]);
+  });
+
+  textarea.addEventListener('blur', () => {
+    setTimeout(hideSuggestions, 150);
+  });
+
+  note.appendChild(suggestionBox);
+  // --- end suggestions ---
 
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
@@ -347,9 +565,18 @@ document.addEventListener('mouseup', () => {
 selectFolderBtn.addEventListener('click', async () => {
   try {
     directoryHandle = await window.showDirectoryPicker({ startIn: 'documents', mode: 'readwrite' });
-    await directoryHandle.requestPermission({ mode: 'readwrite' });
+    const perm = await directoryHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') throw new Error('Permission not granted');
 
-    addNoteBtn.disabled = false;
+    // remember the selected folder for future sessions
+    try { await saveDirectoryHandle(directoryHandle); } catch (e) { console.warn('Could not save directory handle', e); }
+
+  addNoteBtn.disabled = false;
+  setCurrentFolderName(directoryHandle.name || '(selected)');
+    // clear existing notes before loading from folder to avoid duplicates
+    Array.from(document.querySelectorAll('.note')).forEach(n => n.remove());
+    openNotesContent.innerHTML = '';
+
     for await (const [name, handle] of directoryHandle.entries()) {
       if (handle.kind === 'file' && name.endsWith('.txt')) {
         const file = await handle.getFile();
@@ -474,3 +701,25 @@ async function populateFolderFilesTab(handle) {
     }
   }
 }
+
+// Try to restore a previously selected folder on load
+(async function restoreSavedFolder() {
+  try {
+    const saved = await loadSavedDirectoryHandle();
+    if (saved) {
+      // load notes from the saved folder
+      addNoteBtn.disabled = false;
+      setCurrentFolderName(saved.name || '(saved)');
+      for await (const [name, handle] of saved.entries()) {
+        if (handle.kind === 'file' && name.endsWith('.txt')) {
+          const file = await handle.getFile();
+          const text = await file.text();
+          createNote(60 + Math.random() * 300, 60 + Math.random() * 200, text, handle);
+        }
+      }
+      sendGraphData();
+    }
+  } catch (e) {
+    console.warn('Could not restore saved folder', e);
+  }
+})();
