@@ -4,6 +4,47 @@ const selectFolderBtn = document.getElementById('selectFolderBtn');
 const toggleGraphBtn = document.getElementById('toggleGraphBtn');
 const sidebar = document.getElementById('sidebar');
 
+
+// --- Infinite canvas pan/zoom state ---
+let tx = 0, ty = 0, scale = 1;
+let isPanning = false, panStart = { x: 0, y: 0 };
+const viewport = document.getElementById('canvas-viewport');
+
+function applyTransform() {
+  canvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+
+viewport.addEventListener('pointerdown', e => {
+  if (e.target !== viewport && e.target !== canvas) return;
+  isPanning = true;
+  panStart = { x: e.clientX - tx, y: e.clientY - ty };
+  viewport.classList.add('panning');
+  viewport.setPointerCapture(e.pointerId);
+});
+viewport.addEventListener('pointermove', e => {
+  if (!isPanning) return;
+  tx = e.clientX - panStart.x;
+  ty = e.clientY - panStart.y;
+  applyTransform();
+});
+viewport.addEventListener('pointerup', () => {
+  isPanning = false;
+  viewport.classList.remove('panning');
+});
+viewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = viewport.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.max(0.15, Math.min(5, scale * delta));
+  tx = mx - (mx - tx) * (newScale / scale);
+  ty = my - (my - ty) * (newScale / scale);
+  scale = newScale;
+  applyTransform();
+}, { passive: false });
+// --- end pan/zoom ---
+
 let graphWindow = null;
 toggleGraphBtn.addEventListener('click', () => {
   if (!graphWindow || graphWindow.closed) {
@@ -526,8 +567,8 @@ function createNote(x, y, text = "New note", existingFileHandle = null) {
   note.addEventListener('mousedown', ev => {
     if (['TEXTAREA', 'BUTTON', 'SELECT'].includes(ev.target.tagName)) return;
     dragNote = note;
-    offsetX = ev.offsetX;
-    offsetY = ev.offsetY;
+    offsetX = ev.clientX - note.getBoundingClientRect().left;
+offsetY = ev.clientY - note.getBoundingClientRect().top;
     note.style.zIndex = 10;
   });
 
@@ -548,14 +589,17 @@ addNoteBtn.addEventListener('click', () => {
 
 canvas.addEventListener('dblclick', (e) => {
   if (e.target !== canvas) return;
-  createNote(e.clientX - canvas.getBoundingClientRect().left,
-             e.clientY - canvas.getBoundingClientRect().top);
+  const rect = viewport.getBoundingClientRect();
+  const cx = (e.clientX - rect.left - tx) / scale;
+  const cy = (e.clientY - rect.top - ty) / scale;
+  createNote(cx, cy);
 });
 
 document.addEventListener('mousemove', (ev) => {
   if (!dragNote) return;
-  dragNote.style.left = (ev.clientX - offsetX) + 'px';
-  dragNote.style.top = (ev.clientY - offsetY) + 'px';
+  const vRect = viewport.getBoundingClientRect();
+dragNote.style.left = ((ev.clientX - vRect.left - tx) / scale - offsetX / scale) + 'px';
+dragNote.style.top = ((ev.clientY - vRect.top - ty) / scale - offsetY / scale) + 'px';
 });
 
 document.addEventListener('mouseup', () => {
